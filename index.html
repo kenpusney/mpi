@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Music-Programming Interface</title>
+    <script src="src/NoteTable.js" type="application/javascript"></script>
+    <script src="src/WebAudio.js" type="application/javascript"></script>
+</head>
+<body>
+    <textarea name="source" id="source" cols="30" rows="10">
+function createMappingTable(noteFreq) {
+    let mappings = [];
+
+    noteFreq.forEach(function (keys, idx) {
+        let keyList = Object.entries(keys);
+
+        keyList.forEach(function (key) {
+            mappings.push(key[1]);
+        });
+    });
+
+    return mappings;
+}
+
+function convertToAscii(text) {
+    return text.split("")
+        .filter(function (c) { return /\S/.test(c) })
+        .map(function (s) { return s.charCodeAt(0) });
+}
+
+function start(text, lift) {
+    lift = lift || 0;
+    let audioContext = new (window.AudioContext || window.webkitAudioContext);
+    let mappings = createMappingTable(createNoteTable());
+
+    masterGainNode = audioContext.createGain();
+    masterGainNode.connect(audioContext.destination);
+    masterGainNode.value = 0.8;
+
+    let osc = audioContext.createOscillator();
+    osc.connect(masterGainNode);
+    osc.type = "sine";
+
+    nums = convertToAscii(text);
+
+
+    let theTime = new Date().getTime();
+    osc.start();
+    let count = 0;
+    let hdl = setInterval(function () {
+        osc.frequency.value = mappings[lift + (nums[count] % (mappings.length - lift))];;
+        count++;
+        if (count >= nums.length) {
+            osc.stop();
+            masterGainNode.disconnect();
+            clearInterval(hdl);
+        }
+    }, 250);
+}
+
+function onClick() {
+    start(document.querySelector("#source").value, parseInt(document.querySelector("#lift").value));
+}
+    </textarea>
+    <input type="number" id="lift" value="13">
+    <button onclick="onClick();">start</button>
+</body>
+</html>
